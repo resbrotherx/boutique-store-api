@@ -74,8 +74,8 @@ def product_list_view(request):
                 # "tags":tags,
             }
             return Response(context, status=status.HTTP_200_OK)
-    except Category.DoesNotExist:
-        return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Product.DoesNotExist:
+        return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
     return Response({}, status.HTTP_400_BAD_REQUEST)
    
 
@@ -116,7 +116,27 @@ def category_product_list__view(request, cid):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def subcategory_list_view(request, cid):
+    try:
+        if request.method == 'GET':
+            category = Category.objects.get(cid=cid)
+            subcategories = SubCategory.objects.filter(category=category)
+            serializer = SubCategorySerializer(subcategories, many=True)
+            category_serializer = CategorySerializer(category)
+            context = {
+                "category": category_serializer.data,
+                "subcategories": serializer.data,
+            }
+            return Response(context, status=status.HTTP_200_OK)
+    except Category.DoesNotExist:
+        return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
+    except SubCategory.DoesNotExist:
+        return Response({"error": "Subcategories not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -149,7 +169,23 @@ def brand_detail_view(request, vid):
     return Response({}, status.HTTP_400_BAD_REQUEST)
 
     
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated]) 
+def all_product_list(request):
+    try:
+        if request.method == 'GET':
+            prod = Product.objects.all().order_by("-id")
+            products = ProductSerializer(prod, many=True)
+            # tags = Tag.objects.all().order_by("-id")[:6]
+            context = {
+                "products":products.data,
+                # "tags":tags,
+            }
+            return Response(context, status=status.HTTP_200_OK)
+    except Product.DoesNotExist:
+        return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response({}, status.HTTP_400_BAD_REQUEST)
+   
 
 def product_detail_view(request, pid):
     if request.method == 'GET':
@@ -387,21 +423,49 @@ def add_to_cart(request):
         return Response({"error": str(e)}, status=500)
 
 
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
+# def cart_view(request):
+#     cart_total_amount = 0
+#     if 'cart_data_obj' in request.session:
+#         cart_data = request.session['cart_data_obj']
+
+#         for p_id, item in cart_data.items():
+#             cart_total_amount += int(item['qty']) * float(item['price'])
+
+#         return Response({"cart_data": cart_data, 'totalcartitems': len(cart_data), 'cart_total_amount': cart_total_amount})
+#     else:
+#         messages.warning(request, "Your cart is empty")
+#         return Response({"error": "Your cart is empty"}, status=400)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def cart_view(request):
-    cart_total_amount = 0
-    if 'cart_data_obj' in request.session:
-        cart_data = request.session['cart_data_obj']
+    try:
+        if request.method == 'GET':
+            cart_total_amount = 0
+            if 'cart_data_obj' in request.session:
+                cart_data = request.session['cart_data_obj']
+                # Calculate total amount
+                for p_id, item in cart_data.items():
+                    cart_total_amount += int(item['qty']) * float(item['price'])
+                # Serialize the cart_data.values() as a list
+                serializer = CartItemSerializer(data=list(cart_data.values()), many=True)
+                serializer.is_valid(raise_exception=True)
 
-        for p_id, item in cart_data.items():
-            cart_total_amount += int(item['qty']) * float(item['price'])
-
-        return Response({"cart_data": cart_data, 'totalcartitems': len(cart_data), 'cart_total_amount': cart_total_amount})
-    else:
-        messages.warning(request, "Your cart is empty")
-        return Response({"error": "Your cart is empty"}, status=400)
-
+                return JsonResponse({
+                    "cart_data": serializer.data,
+                    'totalcartitems': len(cart_data),
+                    'cart_total_amount': cart_total_amount
+                })
+            else:
+                messages.warning(request, "Your cart is empty")
+                return JsonResponse({"error": "Your cart is empty"}, status=400)
+        else:
+            return JsonResponse({"error": "Only GET requests are allowed"}, status=405)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 # @api_view(['GET'])
@@ -580,10 +644,137 @@ def payment_completed_view(request):
 def payment_failed_view(request):
     return Response({"error":"payment faild"}, status=status.HTTP_200_OK)
 
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def Staff_orders_list(request):
+    try:
+        if request.method == 'GET':
+            orders_list = CartOrder.objects.all().order_by("-id")
+            serializer = OrderSerializer(orders_list, many=True)
+            staff_list = User.objects.filter(is_staff=True)
+            staff = UserSerializer(staff_list, many=True)
+            context = {"orders": serializer.data, "staffs": staff.data}
+            return Response(context, status=status.HTTP_200_OK)
+        elif request.method == 'POST':
+            data = request.data
+            order = get_object_or_404(CartOrder, pk=data['id'])
+            
+            # Fetch the User instance based on the email
+            staff_email = data['staff']
+            staff_user = User.objects.get(email=staff_email)
+            
+            order.assign_to = staff_user
+            order.save()
+            
+            serializer = OrderSerializer(order)
+            context = {"order": serializer.data}
+            return Response(context, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    except CartOrder.DoesNotExist:
+        return Response({"error": "CartOrder not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@login_required
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def Staff_list(request):
+    try:
+        if request.method == 'GET':
+            staff_list = User.objects.filter(is_staff=True)
+            staff = UserSerializer(staff_list, many=True)
+            context = {"staffs": staff.data}
+            return Response(context, status=status.HTTP_200_OK)
+        elif request.method == 'POST':
+            data = request.data
+            user = get_object_or_404(User, pk=data['id'])
+            
+            # Fetch the User instance based on the email
+            
+            user.assign_to = staff_user
+            order.save()
+            
+            serializer = OrderSerializer(order)
+            context = {"order": serializer.data}
+            return Response(context, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    except CartOrder.DoesNotExist:
+        return Response({"error": "CartOrder not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET','POST'])
+@permission_classes([IsAuthenticated])
+def customers(request):
+    try:
+        if request.method == 'GET':
+            users = User.objects.filter(is_staff=False, is_superuser=False)
+            user_profiles = Profile.objects.filter(user__in=users)
+            combined_data = []
+            for user in users:
+                user_data = UserSerializer(user).data
+                profile_data = ProfileSerializer(user_profiles.filter(user=user).first()).data
+                combined_data.append({**user_data, **profile_data})
+            context = {"customers": combined_data}
+            return Response(context, status=status.HTTP_200_OK)
+        elif request.method == 'POST':
+            data = request.data
+            customer_id = data['id']
+            if not customer_id:
+                return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
+            customeractivity = UserActivity.objects.filter(pk=customer_id).order_by("-id")
+            # Update the status for each order
+            serializer = UserActivitySerializer(customeractivity, many=True)
+            context = {"activities": serializer.data}
+            return Response(context, status=status.HTTP_200_OK)
+    except CartOrder.DoesNotExist:
+        return Response({"error": "One or more CartOrders not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def customer_orders_list(request):
+    try:
+        if request.method == 'GET':
+            data = request.data
+            user_ = data['username']
+            user = User.objects.get(username=user_)
+            orders_list = CartOrder.objects.filter(user=user,product_status=data['status']).order_by("-id")
+            serializer = OrderSerializer(orders_list, many=True)
+            context = {"orders": serializer.data}
+            return Response(context, status=status.HTTP_200_OK)
+        elif request.method == 'POST':
+            data = request.data
+            order_ids = data.get('ids', [])
+            # new_status = data.get('status', '')
+
+            if not order_ids:
+                return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
+            orders = CartOrder.objects.filter(pk__in=order_ids).order_by("-id")
+            
+            # Update the status for each order
+            for order in orders:
+                order.product_status = "cancelled"
+                order.save()
+            serializer = OrderSerializer(orders, many=True)
+            context = {"orders": serializer.data}
+            return Response(context, status=status.HTTP_200_OK)
+    except CartOrder.DoesNotExist:
+        return Response({"error": "One or more CartOrders not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def customer_dashboard(request):
-    orders_list = CartOrder.objects.filter(user=request.user).order_by("-id")
+    orders_list = CartOrder.objects.filter(user=request.user,product_status=data['status']).order_by("-id")
     address = Address.objects.filter(user=request.user)
 
 

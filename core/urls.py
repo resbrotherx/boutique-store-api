@@ -11,10 +11,14 @@ urlpatterns = [
     path("products/", product_list_view, name="product-list"),
     path("product/<pid>/", product_detail_view, name="product-detail"),
     path("slider/", slider, name="slider"),
+    path("customers_orders_list_&_statue_update/",Staff_orders_list, name="customers_all_orders"),
+    path("customer_orders_&_cancel/",customer_orders_list, name="customer_orders_list"),
     # Category
+    
+    path("customers/",customers, name="customers"),
     path("category/", category_list_view, name="category-list"),
     path("category/<cid>/", category_product_list__view, name="category-product-list"),
-
+    path('subcategories/', subcategory_list_view, name='subcategory_list_view'),
     # Brand
     path("brands/", brands_list_view, name="brand-list"),
     path("brand/<vid>/", brand_detail_view, name="brand-detail"),

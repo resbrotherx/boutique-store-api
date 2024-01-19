@@ -7,11 +7,21 @@ from django_ckeditor_5.fields import CKEditor5Field
 
 
 STATUS_CHOICE = (
+    ("unprocessed", "Unprocessed"),
     ("processing", "Processing"),
     ("shipped", "Shipped"),
     ("delivered", "Delivered"),
+    ("cancelled", "Cancelled"),
+    ("exchanged", "Exchanged"),
+    ("delayed", "Delayed"),
 )
 
+STATUS_IMPORTANCE = (
+    ("normal", "Normal"),
+    ("high", "High"),
+    ("low", "Low"),
+
+)
 
 STATUS = (
     ("draft", "Draft"),
@@ -34,6 +44,12 @@ RATING = (
 def user_directory_path(instance, filename):
     return 'user_{0}/{1}'.format(instance.user.id, filename)
 
+class Faq(models.Model):
+    title = models.CharField(max_length=200)
+    description = CKEditor5Field(config_name='extends', null=True, blank=True)
+
+    def __str__(self):
+        return self.title
 
 class Category(models.Model):
     cid = ShortUUIDField(unique=True, length=10, max_length=20,
@@ -49,6 +65,27 @@ class Category(models.Model):
 
     def product_count(self):
         return Product.objects.filter(category=self).count()
+
+    def __str__(self):
+        return self.title
+
+class SubCategory(models.Model):
+    sid = ShortUUIDField(unique=True, length=10, max_length=20,
+                         prefix="subcat", alphabet="abcdefgh12345")
+    title = models.CharField(max_length=100, default="Subcategory")
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name='subcategories')
+    description = CKEditor5Field(config_name='extends', null=True, blank=True)
+    image = models.ImageField(upload_to="subcategory", default="subcategory.jpg")
+
+    class Meta:
+        verbose_name_plural = "Subcategories"
+
+    def subcategory_image(self):
+        return mark_safe('<img src="%s" width="50" height="50" />' % (self.image.url))
+
+    def product_count(self):
+        return Product.objects.filter(category__subcategory=self).count()
 
     def __str__(self):
         return self.title
@@ -98,10 +135,12 @@ class Product(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, null=True, related_name="category")
+    subcategory = models.ForeignKey(
+        SubCategory, on_delete=models.SET_NULL, null=True, related_name="subcategory") 
     brand = models.ForeignKey(
         Brands, on_delete=models.SET_NULL, null=True, related_name="product")
 
-    title = models.CharField(max_length=100, default="Fresh Pear")
+    title = models.CharField(max_length=100, default="Vintage")
     image = models.ImageField(
         upload_to=user_directory_path, default="product.jpg")
     # description = models.TextField(null=True, blank=True, default="This is the product")
@@ -165,10 +204,20 @@ class ProductImages(models.Model):
         verbose_name_plural = "Product Images"
 
 
+
+
 ############################################## Cart, Order, OrderITems and Address ##################################
 ############################################## Cart, Order, OrderITems and Address ##################################
 ############################################## Cart, Order, OrderITems and Address ##################################
 ############################################## Cart, Order, OrderITems and Address ##################################
+
+class UserActivity(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    activity = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user.username} - {self.activity} - {self.timestamp}'
 
 
 class CartOrder(models.Model):
@@ -177,6 +226,9 @@ class CartOrder(models.Model):
         max_digits=99999999999999, decimal_places=2, default="1.99")
     paid_status = models.BooleanField(default=False, null=True, blank=True)
     order_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    assign_to = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,related_name="assigned")
+    importance = models.CharField(
+        choices=STATUS_IMPORTANCE, max_length=50, default="normal")
     product_status = models.CharField(
         choices=STATUS_CHOICE, max_length=30, default="processing")
     sku = ShortUUIDField(null=True, blank=True, length=5,

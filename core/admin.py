@@ -12,6 +12,9 @@ class ProductAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['title', 'category_image']
 
+class SubCategoryAdmin(admin.ModelAdmin):
+    list_display = ['title', 'subcategory_image','category']
+
 class BrandsAdmin(admin.ModelAdmin):
     list_display = ['title', 'brand_image']
 
@@ -40,6 +43,7 @@ class AddressAdmin(admin.ModelAdmin):
 
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Category, CategoryAdmin)
+admin.site.register(SubCategory, SubCategoryAdmin)
 admin.site.register(Brands, BrandsAdmin)
 admin.site.register(CartOrder, CartOrderAdmin)
 admin.site.register(CartOrderProducts, CartOrderProductsAdmin)
@@ -47,3 +51,5 @@ admin.site.register(ProductReview, ProductReviewAdmin)
 admin.site.register(wishlist_model, wishlistAdmin)
 admin.site.register(Address, AddressAdmin)
 admin.site.register(Slider)
+admin.site.register(Faq)
+

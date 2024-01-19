@@ -69,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'userauths.middleware.UserActivityMiddleware',
 ]
 
 ROOT_URLCONF = 'ecomprj.urls'
@@ -196,13 +197,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     # Add your frontend domains here
     "http://localhost:3000",
-    "https://yourfrontenddomain.com",
+    "https://aliceandtiwa.com",
 ]
 JAZZMIN_SETTINGS = {
-    'site_header': "Desphixs Shop",
+    'site_header': "Alice*Tiwa",
     'site_brand': "You order, we deliver",
-    'site_logo': "assets/imgs/theme/loading.gif",
-    'copyright': "desphixs-shop.com",
+    'site_logo': "logo.jpeg",
+    'copyright': "apsuni.com",
 }
 
 
