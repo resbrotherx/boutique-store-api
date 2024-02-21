@@ -195,7 +195,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    # Add your frontend domains here
+    # "*",
     "http://localhost:3000",
     "https://aliceandtiwa.com",
 ]
@@ -424,5 +424,6 @@ CKEDITOR_5_CONFIGS = {
 
 
 
-PAYPAL_RECEIVER_EMAIL = 'businessdestiny@gmail.com'
+PAYPAL_RECEIVER_EMAIL = 'director@aliceandtiwa.com'
 PAYPAL_TEST = True
+PAYSTACK_SECRET_KEY = 'sk_test_ef1d96fc01009208d281858bd1fa7eefcf8850ec'

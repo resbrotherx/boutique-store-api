@@ -32,6 +32,8 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
         
+
+# CartOrderSerializer
 class SubCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SubCategory
@@ -61,6 +63,22 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartOrder
         fields = '__all__'
+
+class CartOrderProductsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartOrderProducts
+        fields = '__all__'
+
+# class CartOrderProductsSerializer(serializers.ModelSerializer):
+#     user = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = CartOrderProducts
+#         fields = ['id', 'order', 'invoice_no', 'product_status', 'item', 'image', 'qty', 'price', 'total', 'user']
+
+    # def get_user(self, instance):
+    #     return instance.order.user.id if instance.order.user else None
+
 
 class CartItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()

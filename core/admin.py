@@ -28,6 +28,9 @@ class CartOrderProductsAdmin(admin.ModelAdmin):
     list_display = ['order', 'invoice_no', 'item', 'image','qty', 'price', 'total']
 
 
+class VoucherAdmin(admin.ModelAdmin):
+    list_display = ['user', 'code', 'price','status']
+
 class ProductReviewAdmin(admin.ModelAdmin):
     list_display = ['user', 'product', 'review', 'rating']
 
@@ -36,10 +39,12 @@ class wishlistAdmin(admin.ModelAdmin):
     list_display = ['user', 'product', 'date']
 
 
+class PayHistoryAdmin(admin.ModelAdmin):
+    list_display = ['user', 'paystack_charge_id','amount', 'status']
+
 class AddressAdmin(admin.ModelAdmin):
     list_editable = ['address', 'status']
     list_display = ['user', 'address', 'status']
-
 
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Category, CategoryAdmin)
@@ -50,6 +55,13 @@ admin.site.register(CartOrderProducts, CartOrderProductsAdmin)
 admin.site.register(ProductReview, ProductReviewAdmin)
 admin.site.register(wishlist_model, wishlistAdmin)
 admin.site.register(Address, AddressAdmin)
+
+admin.site.register(PayHistory, PayHistoryAdmin)
+admin.site.register(UserActivity)
 admin.site.register(Slider)
 admin.site.register(Faq)
+admin.site.register(Size)
+admin.site.register(Color)
+admin.site.register(Voucher,VoucherAdmin)
+
 

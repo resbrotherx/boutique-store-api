@@ -13,9 +13,11 @@ urlpatterns = [
     path("slider/", slider, name="slider"),
     path("customers_orders_list_&_statue_update/",Staff_orders_list, name="customers_all_orders"),
     path("customer_orders_&_cancel/",customer_orders_list, name="customer_orders_list"),
+    path("customer_exchange/",Exchange, name="customer_exchange"),
     # Category
     
     path("customers/",customers, name="customers"),
+    path("Staff_list/",Staff_list, name="Staff_list"),
     path("category/", category_list_view, name="category-list"),
     path("category/<cid>/", category_product_list__view, name="category-product-list"),
     path('subcategories/', subcategory_list_view, name='subcategory_list_view'),
@@ -50,6 +52,7 @@ urlpatterns = [
       # Checkout  URL
     path("checkout/", checkout_view, name="checkout"),
 
+    path("call_back_url/", call_back_url, name="call_back_url"),
     # Paypal URL
     path('paypal/', include('paypal.standard.ipn.urls')),
 
