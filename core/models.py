@@ -206,7 +206,6 @@ class Brands(models.Model):
 	authentic_rating = models.CharField(max_length=100, default="100")
 	days_return = models.CharField(max_length=100, default="100")
 	warranty_period = models.CharField(max_length=100, default="100")
-
 	user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 	date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
