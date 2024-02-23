@@ -143,24 +143,24 @@ def subcategory_list_view(request, cid):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def brands_list_view(request):
-    if request.method == 'GET':
-        try:
-            brands = Brands.objects.annotate(total_products=Count('product'))
-            brand_serialized = BrandSerializer(brands, many=True)
-            context = {"brands": brand_serialized.data}
-            return Response(context, status=status.HTTP_200_OK)
-        except Brands.DoesNotExist:
-            return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
-    elif request.method == 'POST':
-        try:
-            data = request.data
-            serializer = BrandSerializer(data={'user': request.user.id, 'title': data['title']})
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+	if request.method == 'GET':
+		try:
+			brands = Brands.objects.annotate(total_products=Count('product'))
+			brand_serialized = BrandSerializer(brands, many=True)
+			context = {"brands": brand_serialized.data}
+			return Response(context, status=status.HTTP_200_OK)
+		except Brands.DoesNotExist:
+			return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
+	elif request.method == 'POST':
+		try:
+			data = request.data
+			serializer = BrandSerializer(data={'user': request.user.id, 'title': data['title']})
+			if serializer.is_valid():
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_201_CREATED)
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -858,18 +858,37 @@ def Staff_list(request):
 			data = request.data
 			username = data.get('username')
 			password = data.get('password')
+			email = data.get('email')
 			retype_password = data.get('retype_password')
 			display_name = data.get('display_name')
 			staff_role = data.get('staff_role')
+
+			# Check if all required fields are provided
+			if not all([username, password, retype_password, display_name, staff_role]):
+				return Response({"error": "All required fields must be provided"}, status=status.HTTP_400_BAD_REQUEST)
+
 			# Check if passwords match
 			if password != retype_password:
 				return Response({"error": "Passwords do not match"}, status=status.HTTP_400_BAD_REQUEST)
-						# Create the user
-				user = User.objects.create_user(username=username, password=password, is_staff=True)
-				user.profile.display_name = display_name
-				user.profile.role = staff_role
-				user.save()
-				return Response({"message": "Staff user created successfully"}, status=status.HTTP_201_CREATED)
+
+			if User.objects.filter(email=email).exists():
+				return Response({"error": "Email is already taken"}, status=status.HTTP_400_BAD_REQUEST)
+
+			# Check if username is taken
+			if User.objects.filter(username=username).exists():
+				return Response({"error": "Username is already taken"}, status=status.HTTP_400_BAD_REQUEST)
+
+			# Check if display name is taken
+			if Profile.objects.filter(display_name=display_name).exists():
+				return Response({"error": "Display name is already taken"}, status=status.HTTP_400_BAD_REQUEST)
+
+			# Create the user
+			user = User.objects.create_user(username=username, email=email, password=password, is_staff=True)
+			user.profile.display_name = display_name
+			user.profile.role = staff_role
+			user.save()
+
+			return Response({"message": "Staff user created successfully"}, status=status.HTTP_201_CREATED)
 		#   data = request.data
 		#   user = get_object_or_404(User, pk=data['id'])
 			
