@@ -78,7 +78,7 @@ def product_list_view(request):
 	except Product.DoesNotExist:
 		return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 	return Response({}, status.HTTP_400_BAD_REQUEST)
-   
+	 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -139,21 +139,29 @@ def subcategory_list_view(request, cid):
 	except Exception as e:
 		return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
+# views.py
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def brands_list_view(request):
-	if request.method == 'GET':
-		try:
-			brand = Brands.objects.all()
-			brands = BrandSerializer(brand, many=True)
-			context = {
-				"brands": brands.data,
-			}
-			return Response(context, status=status.HTTP_200_OK)
-		except Brands.DoesNotExist:
-			return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
-	return Response({}, status.HTTP_400_BAD_REQUEST)
-	
+    if request.method == 'GET':
+        try:
+            brands = Brands.objects.annotate(total_products=Count('product'))
+            brand_serialized = BrandSerializer(brands, many=True)
+            context = {"brands": brand_serialized.data}
+            return Response(context, status=status.HTTP_200_OK)
+        except Brands.DoesNotExist:
+            return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
+    elif request.method == 'POST':
+        try:
+            data = request.data
+            serializer = BrandSerializer(data={'user': request.user.id, 'title': data['title']})
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def brand_detail_view(request, vid):
@@ -186,7 +194,7 @@ def all_product_list(request):
 	except Product.DoesNotExist:
 		return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 	return Response({}, status.HTTP_400_BAD_REQUEST)
-   
+	 
 
 def product_detail_view(request, pid):
 	if request.method == 'GET':
@@ -329,11 +337,11 @@ def ajax_add_review(request, pid):
 	average_reviews = ProductReview.objects.filter(product=product).aggregate(rating=Avg("rating"))
 
 	return JsonResponse(
-	   {
+		 {
 		 'bool': True,
 		'context': context,
 		'average_reviews': average_reviews
-	   }
+		 }
 	)
 
 @api_view(['GET','POST'])
@@ -378,7 +386,7 @@ def filter_product(request):
 	else:
 		products = Product.objects.filter(product_status="published").order_by("-id").distinct()    
 	
-	   
+		 
 
 	
 	data = render_to_string("core/async/product-list.html", {"products": products})
@@ -688,115 +696,115 @@ def checkout_view(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def call_back_url(request):
-    try:
-        data = request.data
-        reference = data['reference']
+		try:
+				data = request.data
+				reference = data['reference']
 
-        # Ensure the user is authenticated
-        if not request.user.is_authenticated:
-            return Response({"error": "User is not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+				# Ensure the user is authenticated
+				if not request.user.is_authenticated:
+						return Response({"error": "User is not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        def verify_payment(request):
-            url = 'https://api.paystack.co/transaction/verify/' + reference
-            headers = {
-                'Authorization': 'Bearer ' + settings.PAYSTACK_SECRET_KEY,
-                'Content-type': 'application/json',
-                'Accept': 'application/json',
-            }
-            datum = {
-                "reference": reference
-            }
+				def verify_payment(request):
+						url = 'https://api.paystack.co/transaction/verify/' + reference
+						headers = {
+								'Authorization': 'Bearer ' + settings.PAYSTACK_SECRET_KEY,
+								'Content-type': 'application/json',
+								'Accept': 'application/json',
+						}
+						datum = {
+								"reference": reference
+						}
 
-            try:
-                response = requests.get(url, data=json.dumps(datum), headers=headers)
-                response.raise_for_status()  # Raise HTTPError for bad responses
-                result = response.json()
-                if 'data' not in result:
-                    return Response({"error": f"Unexpected response format. 'data' key not found: {result}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+						try:
+								response = requests.get(url, data=json.dumps(datum), headers=headers)
+								response.raise_for_status()  # Raise HTTPError for bad responses
+								result = response.json()
+								if 'data' not in result:
+										return Response({"error": f"Unexpected response format. 'data' key not found: {result}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                if result['data']['status'] == 'success':
-                    # Create Order Object
-                    
-                    # Check if 'access_code' is present in result['data']
-                    # if 'access_code' in result['data']:
-                    #     access_code = result['data']['access_code']
-                    # else:
-                    #     # Handle the case where 'access_code' is not present
-                    #     return Response({"error": "'access_code' not found in response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+								if result['data']['status'] == 'success':
+										# Create Order Object
+										
+										# Check if 'access_code' is present in result['data']
+										# if 'access_code' in result['data']:
+										#     access_code = result['data']['access_code']
+										# else:
+										#     # Handle the case where 'access_code' is not present
+										#     return Response({"error": "'access_code' not found in response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                    # print(access_code)
-                    # Continue with the rest of your code...
-                    
-                    # Check if 'data' key exists in result and if 'email' key exists in result['data']
-                    if 'data' in result and 'email' in result['data']['customer']:
-                        
-                        CartOrder.objects.filter(user__email=result['data']['customer']['email']).update(paid_status=True)
-                    else:
-                        # Handle the case where 'data' or 'email' key is not present
-                        return Response({"error": "'email' not found in response data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    total_amount = 0
-                    for p_id, item in request.session['cart_data_obj'].items():
-                        total_amount += int(item['qty']) * float(item['price'])
-                    
-                    
-                    order_serializer = OrderSerializer(data={'user': request.user.id, 'price': total_amount})
-                    order_serializer.is_valid(raise_exception=True)
-                    order_serializer.save()
-                    # Obtain the order_id from the newly created order instance
-                    order_id = order_serializer.data['id']
+										# print(access_code)
+										# Continue with the rest of your code...
+										
+										# Check if 'data' key exists in result and if 'email' key exists in result['data']
+										if 'data' in result and 'email' in result['data']['customer']:
+												
+												CartOrder.objects.filter(user__email=result['data']['customer']['email']).update(paid_status=True)
+										else:
+												# Handle the case where 'data' or 'email' key is not present
+												return Response({"error": "'email' not found in response data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+										total_amount = 0
+										for p_id, item in request.session['cart_data_obj'].items():
+												total_amount += int(item['qty']) * float(item['price'])
+										
+										
+										order_serializer = OrderSerializer(data={'user': request.user.id, 'price': total_amount})
+										order_serializer.is_valid(raise_exception=True)
+										order_serializer.save()
+										# Obtain the order_id from the newly created order instance
+										order_id = order_serializer.data['id']
 
-                    order = CartOrder.objects.create(
-                                user=request.user,
-                                price=total_amount
-                            )
-                    instance = PayHistory.objects.create(
-                        amount=int(total_amount),
-                        user=request.user,
-                        order_id=order.id,
-                        paystack_charge_id=result['data']['reference'],
-                        paid=True,
-                        # paystack_access_code=access_code  # Use the access_code variable here
-                    )
-                    # if request.user.is_authenticated:
-                    #     for p_id, item in request.session['cart_data_obj'].items():
-                    #         cart_order_products_serializer = CartOrderProductsSerializer(data={
-                    #             'user': request.user.id,
-                    #             'order': order.id,
-                    #             'invoice_no': "INVOICE_NO-" + str(order.id),
-                    #             'item': item['title'],
-                    #             'image': item['image'],
-                    #             'qty': item['qty'],
-                    #             'price': item['price'],
-                    #             'total': float(item['qty']) * float(item['price']),
-                    #             'product_status': 'processing'
-                    #         })
-                    #         cart_order_products_serializer.is_valid(raise_exception=True)
-                    #         cart_order_products_serializer.save()
-                    # else:
-                    #     return Response({"error": "User is not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
+										order = CartOrder.objects.create(
+																user=request.user,
+																price=total_amount
+														)
+										instance = PayHistory.objects.create(
+												amount=int(total_amount),
+												user=request.user,
+												order_id=order.id,
+												paystack_charge_id=result['data']['reference'],
+												paid=True,
+												# paystack_access_code=access_code  # Use the access_code variable here
+										)
+										# if request.user.is_authenticated:
+										#     for p_id, item in request.session['cart_data_obj'].items():
+										#         cart_order_products_serializer = CartOrderProductsSerializer(data={
+										#             'user': request.user.id,
+										#             'order': order.id,
+										#             'invoice_no': "INVOICE_NO-" + str(order.id),
+										#             'item': item['title'],
+										#             'image': item['image'],
+										#             'qty': item['qty'],
+										#             'price': item['price'],
+										#             'total': float(item['qty']) * float(item['price']),
+										#             'product_status': 'processing'
+										#         })
+										#         cart_order_products_serializer.is_valid(raise_exception=True)
+										#         cart_order_products_serializer.save()
+										# else:
+										#     return Response({"error": "User is not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
 
-                    return response
-            except requests.exceptions.HTTPError as errh:
-                return Response({"error": f"HTTP Error: {errh}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except requests.exceptions.ConnectionError as errc:
-                return Response({"error": f"Error Connecting: {errc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except requests.exceptions.Timeout as errt:
-                return Response({"error": f"Timeout Error: {errt}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except requests.exceptions.RequestException as err:
-                return Response({"error": f"Request Exception: {err}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+										return response
+						except requests.exceptions.HTTPError as errh:
+								return Response({"error": f"HTTP Error: {errh}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+						except requests.exceptions.ConnectionError as errc:
+								return Response({"error": f"Error Connecting: {errc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+						except requests.exceptions.Timeout as errt:
+								return Response({"error": f"Timeout Error: {errt}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+						except requests.exceptions.RequestException as err:
+								return Response({"error": f"Request Exception: {err}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        response = verify_payment(request)
-        if response:
-            status_code = response.status_code
-            if 200 <= status_code < 300:
-                return Response({"message": "Payment verification Successfull"},status=status_code)
-            else:
-                return Response({"message": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({"error": "Payment verification failed. Unable to retrieve response."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+				response = verify_payment(request)
+				if response:
+						status_code = response.status_code
+						if 200 <= status_code < 300:
+								return Response({"message": "Payment verification Successfull"},status=status_code)
+						else:
+								return Response({"message": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
+				else:
+						return Response({"error": "Payment verification failed. Unable to retrieve response."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		except Exception as e:
+				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -848,16 +856,31 @@ def Staff_list(request):
 			return Response(context, status=status.HTTP_200_OK)
 		elif request.method == 'POST':
 			data = request.data
-			user = get_object_or_404(User, pk=data['id'])
+			username = data.get('username')
+			password = data.get('password')
+			retype_password = data.get('retype_password')
+			display_name = data.get('display_name')
+			staff_role = data.get('staff_role')
+			# Check if passwords match
+			if password != retype_password:
+				return Response({"error": "Passwords do not match"}, status=status.HTTP_400_BAD_REQUEST)
+						# Create the user
+				user = User.objects.create_user(username=username, password=password, is_staff=True)
+				user.profile.display_name = display_name
+				user.profile.role = staff_role
+				user.save()
+				return Response({"message": "Staff user created successfully"}, status=status.HTTP_201_CREATED)
+		#   data = request.data
+		#   user = get_object_or_404(User, pk=data['id'])
 			
-			# Fetch the User instance based on the email
+		#   # Fetch the User instance based on the email
 			
-			user.assign_to = staff_user
-			order.save()
+		#   user.assign_to = staff_user
+		#   order.save()
 			
-			serializer = OrderSerializer(order)
-			context = {"order": serializer.data}
-			return Response(context, status=status.HTTP_200_OK)
+		#   serializer = OrderSerializer(order)
+		#   context = {"order": serializer.data}
+		#   return Response(context, status=status.HTTP_200_OK)
 	except User.DoesNotExist:
 		return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 	except CartOrder.DoesNotExist:

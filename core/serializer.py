@@ -17,11 +17,15 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
+# serializers.py
+# serializers.py
 class BrandSerializer(serializers.ModelSerializer):
+    total_products = serializers.IntegerField(default=0, read_only=True)
+
     class Meta:
         model = Brands
         fields = '__all__'
-
+        
 class WishlistSerializer(serializers.ModelSerializer):
     class Meta:
         model = wishlist_model

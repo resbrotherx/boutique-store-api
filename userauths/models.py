@@ -40,6 +40,7 @@ class User(AbstractUser):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    display_name = models.CharField(max_length=1000, default='none')
     full_name = models.CharField(max_length=1000)
     bio = models.CharField(max_length=100)
     role = models.CharField(
