@@ -908,6 +908,41 @@ def Staff_list(request):
 		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def Account_update(request):
+    try:
+        if request.method == 'POST':
+            data = request.data
+            username = data.get('username')
+            color = data.get('color')
+            display_name = data.get('display_name')
+            email = data.get('email')
+            staff_role = data.get('staff_role')
+
+            # Get the user object
+            user = User.objects.get(username=username)
+
+            # Update the user's profile based on the provided data
+            if color:
+                user.profile.color = color
+            if display_name:
+                user.profile.display_name = display_name
+            if email:
+                user.email = email
+            if staff_role:
+                user.profile.role = staff_role
+
+            # Save the changes
+            user.save()
+
+            return Response({"message": "Staff user details updated successfully"}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 # this gets all the custom and also there activities
 @api_view(['GET','POST'])
 @permission_classes([IsAuthenticated])

@@ -15,7 +15,7 @@ urlpatterns = [
     path("customer_orders_&_cancel/",customer_orders_list, name="customer_orders_list"),
     path("customer_exchange/",Exchange, name="customer_exchange"),
     # Category
-    
+    path("Account_update", Account_update, name="Account_update"),
     path("customers/",customers, name="customers"),
     path("Staff_list/",Staff_list, name="Staff_list"),
     path("category/", category_list_view, name="category-list"),
