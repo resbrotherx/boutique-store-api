@@ -30,6 +30,7 @@ from .serializer import *
 from rest_framework.authentication import TokenAuthentication
 import secrets
 import json
+from django.db import transaction
 
 
 
@@ -75,6 +76,25 @@ def product_list_view(request):
 				# "tags":tags,
 			}
 			return Response(context, status=status.HTTP_200_OK)
+	except Product.DoesNotExist:
+		return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+	return Response({}, status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated]) 
+def dashboard_all_product_view(request):
+	try:
+		if request.method == 'GET':
+			prod = Product.objects.all().order_by("-id")
+			products = ProductSerializer(prod, many=True)
+			# tags = Tag.objects.all().order_by("-id")[:6]
+			context = {
+				"products":products.data,
+				# "tags":tags,
+			}
+			return Response(context, status=status.HTTP_200_OK)
+		# elif request.method == "POST":
+
 	except Product.DoesNotExist:
 		return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 	return Response({}, status.HTTP_400_BAD_REQUEST)
@@ -177,7 +197,51 @@ def brand_detail_view(request, vid):
 			return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
 	return Response({}, status.HTTP_400_BAD_REQUEST)
 
-	
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_category_and_subcategories(request):
+	try:
+		if request.method == 'POST':
+			data = request.data
+			category_data = data.get('category')
+			subcategories_data = data.get('subcategories')
+
+			# Check if the category already exists
+			existing_category = Category.objects.filter(title=category_data.get('title')).first()
+			if existing_category:
+				return Response({"error": "Category already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+			# Create the category
+			category_serializer = CategorySerializer(data=category_data)
+			if category_serializer.is_valid():
+				category = category_serializer.save()
+			else:
+				return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+			# Save subcategories
+			for subcategory_data in subcategories_data:
+				# Check if the subcategory already exists
+				existing_subcategory = SubCategory.objects.filter(title=subcategory_data.get('title')).first()
+				if existing_subcategory:
+					return Response({"error": f"Subcategory '{subcategory_data.get('title')}' already exists"},
+									status=status.HTTP_400_BAD_REQUEST)
+
+				# Set the category for the subcategory
+				subcategory_data['category'] = category.pk
+
+				subcategory_serializer = SubCategorySerializer(data=subcategory_data)
+				if subcategory_serializer.is_valid():
+					subcategory_serializer.save()
+				else:
+					# Rollback: Delete the created category
+					category.delete()
+					return Response(subcategory_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+			return Response({"message": "Category with subcategories created successfully"}, status=status.HTTP_201_CREATED)
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
 def all_product_list(request):
@@ -911,36 +975,36 @@ def Staff_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def Account_update(request):
-    try:
-        if request.method == 'POST':
-            data = request.data
-            username = data.get('username')
-            color = data.get('color')
-            display_name = data.get('display_name')
-            email = data.get('email')
-            staff_role = data.get('staff_role')
+	try:
+		if request.method == 'POST':
+			data = request.data
+			username = data.get('username')
+			color = data.get('color')
+			display_name = data.get('display_name')
+			email = data.get('email')
+			staff_role = data.get('staff_role')
 
-            # Get the user object
-            user = User.objects.get(username=username)
+			# Get the user object
+			user = User.objects.get(username=username)
 
-            # Update the user's profile based on the provided data
-            if color:
-                user.profile.color = color
-            if display_name:
-                user.profile.display_name = display_name
-            if email:
-                user.email = email
-            if staff_role:
-                user.profile.role = staff_role
+			# Update the user's profile based on the provided data
+			if color:
+				user.profile.color = color
+			if display_name:
+				user.profile.display_name = display_name
+			if email:
+				user.email = email
+			if staff_role:
+				user.profile.role = staff_role
 
-            # Save the changes
-            user.save()
+			# Save the changes
+			user.save()
 
-            return Response({"message": "Staff user details updated successfully"}, status=status.HTTP_200_OK)
-    except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			return Response({"message": "Staff user details updated successfully"}, status=status.HTTP_200_OK)
+	except User.DoesNotExist:
+		return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # this gets all the custom and also there activities
@@ -1008,9 +1072,6 @@ def customer_orders_list(request):
 	except Exception as e:
 		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-from django.db import transaction
-import secrets
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
