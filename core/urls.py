@@ -26,6 +26,9 @@ urlpatterns = [
     path("brands/", brands_list_view, name="brand-list"),
     path("brand/<vid>/", brand_detail_view, name="brand-detail"),
 
+    # Exchange
+    path("Exchange/", Exchange, name="Exchange"),
+    
     # Tags
     path("products/tag/<slug:tag_slug>/", tag_list, name="tags"),
 
