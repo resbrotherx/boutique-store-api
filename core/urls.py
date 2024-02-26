@@ -26,6 +26,12 @@ urlpatterns = [
     path("brands/", brands_list_view, name="brand-list"),
     path("brand/<vid>/", brand_detail_view, name="brand-detail"),
 
+
+    # reset
+    path("send_reset_password_otp/", send_reset_password_otp, name="send_reset_password_otp"),
+    path("verify_reset_password_otp/", verify_reset_password_otp, name="verify_reset_password_otp"),
+    path("reset_password/", reset_password, name="reset_password"),
+    
     # Exchange
     path("Exchange/", Exchange, name="Exchange"),
     
