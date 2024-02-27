@@ -25,7 +25,7 @@ urlpatterns = [
     # Brand
     path("brands/", brands_list_view, name="brand-list"),
     path("brand/<vid>/", brand_detail_view, name="brand-detail"),
-
+    path("Activities/", Activities, name="Activities"),
 
     # reset
     path("send_reset_password_otp/", send_reset_password_otp, name="send_reset_password_otp"),

@@ -26,6 +26,13 @@ class BrandSerializer(serializers.ModelSerializer):
         model = Brands
         fields = '__all__'
         
+class UserActivitySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserActivity
+        fields = '__all__'
+
+
 class WishlistSerializer(serializers.ModelSerializer):
     class Meta:
         model = wishlist_model

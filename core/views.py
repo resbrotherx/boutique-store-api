@@ -1015,7 +1015,34 @@ def Account_update(request):
 		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# this gets all the custom and also there activities
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def Activities(request):
+	try:
+		if request.method == 'GET':
+			# users = User.objects.filter(is_staff=False)
+			# user_profiles = Profile.objects.filter(user__in=users)
+			# activities = UserActivity.objects.filter(user=user,product_status=data['status']).order_by("-id")
+			activities = UserActivity.objects.all()
+			serializer = UserActivitySerializer(activities, many=True)
+			context = {"activities": serializer.data}
+			return Response(context, status=status.HTTP_200_OK)
+		elif request.method == 'POST':
+			# data = request.data
+			# customer_id = data['id']
+			# if not customer_id:
+			# 	return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
+			# customeractivity = UserActivity.objects.filter(pk=customer_id).order_by("-id")
+			# # Update the status for each order
+			# serializer = UserActivitySerializer(customeractivity, many=True)
+			context = {"activities": "none"}
+			return Response(context, status=status.HTTP_200_OK)
+	except CartOrder.DoesNotExist:
+		return Response({"error": "One or more CartOrders not found"}, status=status.HTTP_404_NOT_FOUND)
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['GET','POST'])
 @permission_classes([IsAuthenticated])
 def customers(request):
