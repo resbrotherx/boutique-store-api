@@ -32,4 +32,3 @@ jobs:
 
       - name: Restart Django nginx server
         run: sudo systemctl restart nginx.service
-```
