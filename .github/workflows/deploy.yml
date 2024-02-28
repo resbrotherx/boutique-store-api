@@ -12,11 +12,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install python3 python3-pip  # Install Python and pip
-          pip3 install -r requirements.txt  # Install project dependencies
+      # - name: Install dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install python3 python3-pip
+      #     pip3 install -r requirements.txt
       
       - name: Run database migrations
         run: python manage.py makemigrations
@@ -28,7 +28,7 @@ jobs:
         run: python manage.py collectstatic --noinput
 
       - name: Restart Django gunicorn server
-        run: sudo systemctl restart gunicorn.service  # Restart Gunicorn or uWSGI or whatever you're using
+        run: sudo systemctl restart gunicorn.service 
 
       - name: Restart Django nginx server
         run: sudo systemctl restart nginx.service
