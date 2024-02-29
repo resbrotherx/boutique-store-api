@@ -5,6 +5,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth.models import User as us
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,12 +27,23 @@ class BrandSerializer(serializers.ModelSerializer):
         model = Brands
         fields = '__all__'
         
+# class UserActivitySerializer(serializers.ModelSerializer):
+
+#     class Meta:
+#         model = UserActivity
+#         fields = '__all__'
+
+# class UsersSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ['username']
+
 class UserActivitySerializer(serializers.ModelSerializer):
+    user = UserSerializer()
 
     class Meta:
         model = UserActivity
-        fields = '__all__'
-
+        fields = ['id', 'activity', 'timestamp','user']
 
 class WishlistSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,10 +67,10 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         model = ProductReview
         fields = '__all__'
 
-class UserActivitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserActivity
-        fields = '__all__'
+# class UserActivitySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserActivity
+#         fields = '__all__'
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:

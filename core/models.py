@@ -132,6 +132,7 @@ class Category(models.Model):
 						 prefix="cat", alphabet="abcdefgh12345")
 	title = models.CharField(max_length=100, default="Food")
 	image = models.ImageField(upload_to="category", default="category.jpg")
+	created_at = models.DateField(auto_now=True)
 
 	class Meta:
 		verbose_name_plural = "Categories"
