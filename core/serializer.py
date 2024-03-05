@@ -46,9 +46,11 @@ class UserActivitySerializer(serializers.ModelSerializer):
         fields = ['id', 'activity', 'timestamp','user']
 
 class WishlistSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
     class Meta:
         model = wishlist_model
-        fields = '__all__'
+        # fields = '__all__'
+        fields = ['id', 'date', 'product','user']
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

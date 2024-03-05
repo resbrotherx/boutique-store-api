@@ -90,6 +90,59 @@ def product_list_view(request):
 	return Response({}, status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def product_detail_view(request, pid):
+	try:
+		product = Product.objects.get(pid=pid)
+		products = Product.objects.filter(category=product.category).exclude(pid=pid)
+		# Getting all reviews related to a product
+		reviews = ProductReview.objects.filter(product=product).order_by("-date")
+		# Getting average review
+		average_rating = ProductReview.objects.filter(product=product).aggregate(rating=Avg('rating'))
+		# Product Review form
+		review_form = ProductReviewForm()
+		review_form_data = ProductReviewFormSerializer(review_form).data
+		make_review = True
+
+		try:
+			address = Address.objects.get(status=True, user=request.user)
+		except Address.DoesNotExist:
+			address = "Default Address"  # Provide a default address or handle it as needed
+
+		user_review_count = ProductReview.objects.filter(user=request.user, product=product).count()
+
+		if user_review_count > 0:
+			make_review = False
+
+		p_image = product.p_images.all()
+
+		# Serialize data
+		product_data = ProductSerializer(product).data
+		products_data = ProductSerializer(products, many=True).data
+		reviews_data = ProductReviewSerializer(reviews, many=True).data
+
+		context = {
+			"products": product_data,
+			"address": address,
+			"make_review": make_review,
+			"review_form": review_form_data,
+			"p_image": p_image,
+			"average_rating": average_rating,
+			"reviews": reviews_data,
+			"similar_product": products_data,
+		}
+
+		return Response(context, status=status.HTTP_200_OK)
+
+	except Product.DoesNotExist:
+		return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
 def dashboard_all_product_view(request):
 	try:
@@ -269,101 +322,51 @@ def all_product_list(request):
 	return Response({}, status.HTTP_400_BAD_REQUEST)
 	 
 
-def product_detail_view(request, pid):
-	if request.method == 'GET':
-		product = Product.objects.get(pid=pid)
-		# product = get_object_or_404(Product, pid=pid)
-		products = Product.objects.filter(category=product.category).exclude(pid=pid)
+# def product_detail_view(request, pid):
+# 	if request.method == 'GET':
+# 		product = Product.objects.get(pid=pid)
+# 		# product = get_object_or_404(Product, pid=pid)
+# 		products = Product.objects.filter(category=product.category).exclude(pid=pid)
 
-		# Getting all reviews related to a product
-		reviews = ProductReview.objects.filter(product=product).order_by("-date")
+# 		# Getting all reviews related to a product
+# 		reviews = ProductReview.objects.filter(product=product).order_by("-date")
 
-		# Getting average review
-		average_rating = ProductReview.objects.filter(product=product).aggregate(rating=Avg('rating'))
+# 		# Getting average review
+# 		average_rating = ProductReview.objects.filter(product=product).aggregate(rating=Avg('rating'))
 
-		# Product Review form
-		review_form = ProductReviewForm()
+# 		# Product Review form
+# 		review_form = ProductReviewForm()
 
 
-		make_review = True 
+# 		make_review = True 
 
-		if request.user.is_authenticated:
-			address = Address.objects.get(status=True, user=request.user)
-			user_review_count = ProductReview.objects.filter(user=request.user, product=product).count()
+# 		if request.user.is_authenticated:
+# 			address = Address.objects.get(status=True, user=request.user)
+# 			user_review_count = ProductReview.objects.filter(user=request.user, product=product).count()
 
-			if user_review_count > 0:
-				make_review = False
+# 			if user_review_count > 0:
+# 				make_review = False
 		
-		address = "Login To Continue"
+# 		address = "Login To Continue"
 
 
-		p_image = product.p_images.all()
+# 		p_image = product.p_images.all()
 
-		context = {
-			"p": product,
-			"address": address,
-			"make_review": make_review,
-			"review_form": review_form,
-			"p_image": p_image,
-			"average_rating": average_rating,
-			"reviews": reviews,
-			"products": products,
-		}
+# 		context = {
+# 			"p": product,
+# 			"address": address,
+# 			"make_review": make_review,
+# 			"review_form": review_form,
+# 			"p_image": p_image,
+# 			"average_rating": average_rating,
+# 			"reviews": reviews,
+# 			"products": products,
+# 		}
 
-		return Response(context, status=status.HTTP_200_OK)
-	return Response({}, status.HTTP_400_BAD_REQUEST)
+# 		return Response(context, status=status.HTTP_200_OK)
+# 	return Response({}, status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def product_detail_view(request, pid):
-	try:
-		product = Product.objects.get(pid=pid)
-		products = Product.objects.filter(category=product.category).exclude(pid=pid)
-		# Getting all reviews related to a product
-		reviews = ProductReview.objects.filter(product=product).order_by("-date")
-		# Getting average review
-		average_rating = ProductReview.objects.filter(product=product).aggregate(rating=Avg('rating'))
-		# Product Review form
-		review_form = ProductReviewForm()
-		review_form_data = ProductReviewFormSerializer(review_form).data
-		make_review = True
-
-		try:
-			address = Address.objects.get(status=True, user=request.user)
-		except Address.DoesNotExist:
-			address = "Default Address"  # Provide a default address or handle it as needed
-
-		user_review_count = ProductReview.objects.filter(user=request.user, product=product).count()
-
-		if user_review_count > 0:
-			make_review = False
-
-		p_image = product.p_images.all()
-
-		# Serialize data
-		product_data = ProductSerializer(product).data
-		products_data = ProductSerializer(products, many=True).data
-		reviews_data = ProductReviewSerializer(reviews, many=True).data
-
-		context = {
-			"p": product_data,
-			"address": address,
-			"make_review": make_review,
-			"review_form": review_form_data,
-			"p_image": p_image,
-			"average_rating": average_rating,
-			"reviews": reviews_data,
-			"products": products_data,
-		}
-
-		return Response(context, status=status.HTTP_200_OK)
-
-	except Product.DoesNotExist:
-		return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
-
-	except Exception as e:
-		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -1243,40 +1246,31 @@ def wishlist_view(request):
 #             return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
 #     return Response({}, status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def add_to_wishlist(request):
-	if request.method == 'GET':
-		try:
-			product_id = request.GET.get('id')  # Use get to avoid MultiValueDictKeyError
-			if not product_id:
-				return Response({"error": "'id' parameter is missing"}, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'GET':
+        try:
+            product_id = request.GET.get('id')  # Use get to avoid MultiValueDictKeyError
+            if not product_id:
+                return Response({"error": "'id' parameter is missing"}, status=status.HTTP_400_BAD_REQUEST)
 
-			product = Product.objects.get(id=product_id)
-			print("product id isssssssssssss:" + product_id)
+            product = Product.objects.get(id=product_id)
 
-			context = {}
+            wishlist_item = wishlist_model.objects.filter(product=product, user=request.user).first()
 
-			wishlist_count = wishlist_model.objects.filter(product=product, user=request.user).count()
-			print(wishlist_count)
-
-			if wishlist_count > 0:
-				context = {
-					"bool": True
-				}
-			else:
-				new_wishlist = wishlist_model.objects.create(
-					user=request.user,
-					product=product,
-				)
-				context = {
-					"bool": True
-				}
-
-			return Response(context, status=status.HTTP_200_OK)
-		except Product.DoesNotExist:
-			return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
-	return Response({}, status.HTTP_400_BAD_REQUEST)
+            if wishlist_item:
+                return Response({"message": "Item already in wishlist"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                new_wishlist = wishlist_model.objects.create(
+                    user=request.user,
+                    product=product,
+                )
+                return Response({"message": "Item added to wishlist"}, status=status.HTTP_200_OK)
+        except Product.DoesNotExist:
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+    return Response({}, status.HTTP_400_BAD_REQUEST)
 
 
 

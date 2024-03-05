@@ -1,6 +1,8 @@
 from django.db import models
 from django.db.models.signals import post_save
 from django.contrib.auth.models import AbstractUser
+from django.db.utils import IntegrityError
+from django.dispatch import receiver
 
 SEX = (
     ("male", "Male"),
@@ -54,6 +56,24 @@ class Profile(models.Model):
     verified = models.BooleanField(default=False)
 
 
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        try:
+            Profile.objects.create(user=instance)
+        except IntegrityError:
+            # If a profile for this user already exists, do nothing
+            pass
+        except Exception as e:
+            # Handle other exceptions appropriately, such as logging them
+            print("Error creating profile:", str(e))
+
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+post_save.connect(create_user_profile, sender=User)
+post_save.connect(save_user_profile, sender=User)
+
 class ContactUs(models.Model):
     full_name = models.CharField(max_length=200)
     email = models.CharField(max_length=200)
@@ -67,13 +87,3 @@ class ContactUs(models.Model):
 
     def __str__(self):
         return self.full_name
-
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
-
-post_save.connect(create_user_profile, sender=User)
-post_save.connect(save_user_profile, sender=User)

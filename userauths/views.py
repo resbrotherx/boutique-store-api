@@ -13,13 +13,36 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 
 
+# class MyTokenObtainPairView(TokenObtainPairView):
+#     serializer_class = MyTokenObtainPairSerializer
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        user = request.user  # Obtain authenticated user from request object
+        if user.is_authenticated:
+            # Add additional data to the response
+            data = response.data
+            data['email'] = user.email
+            data['username'] = user.username
+            # Add other fields as needed
+            return Response(data)
+        return response
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # Get All Routes
