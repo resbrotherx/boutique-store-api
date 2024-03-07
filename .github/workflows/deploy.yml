@@ -12,8 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Change to project directory
-        run: cd boutique-store-api
+      # - name: Change to project directory
+      #   run: cd boutique-store-api
 
       # - name: Install dependencies
       #   run: |
