@@ -42,7 +42,7 @@ from userauths.models import User
 
 
 def generate_otp():
-    return str(random.randint(100000, 999999))
+		return str(random.randint(100000, 999999))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
@@ -170,7 +170,7 @@ def category_list_view(request):
 			cate = Category.objects.all()
 			categories = CategorySerializer(cate, many=True)
 			context = {
-				"categories":categories.data
+				"products":categories.data
 			}
 			return Response(context, status=status.HTTP_200_OK)
 	except Category.DoesNotExist:
@@ -260,49 +260,52 @@ def brand_detail_view(request, vid):
 	return Response({}, status.HTTP_400_BAD_REQUEST)
 
 
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_category_and_subcategories(request):
-	try:
-		if request.method == 'POST':
-			data = request.data
-			category_data = data.get('category')
-			subcategories_data = data.get('subcategories')
+    try:
+        if request.method == 'POST':
+            data = request.data
+            category_data = data.get('category')
+            subcategories_data = data.get('subcategories')
 
-			# Check if the category already exists
-			existing_category = Category.objects.filter(title=category_data.get('title')).first()
-			if existing_category:
-				return Response({"error": "Category already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if the category already exists
+            existing_category = Category.objects.filter(title=category_data.get('title')).first()
+            if existing_category:
+                return Response({"error": "Category already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-			# Create the category
-			category_serializer = CategorySerializer(data=category_data)
-			if category_serializer.is_valid():
-				category = category_serializer.save()
-			else:
-				return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Create the category
+            category_serializer = CategorySerializer(data=category_data)
+            if category_serializer.is_valid():
+                category = category_serializer.save()
+            else:
+                return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-			# Save subcategories
-			for subcategory_data in subcategories_data:
-				# Check if the subcategory already exists
-				existing_subcategory = SubCategory.objects.filter(title=subcategory_data.get('title')).first()
-				if existing_subcategory:
-					return Response({"error": f"Subcategory '{subcategory_data.get('title')}' already exists"},
-									status=status.HTTP_400_BAD_REQUEST)
+            # Save subcategories
+            if isinstance(subcategories_data, list):
+                for subcategory_data in subcategories_data:
+                    save_subcategory(category, subcategory_data)
+            elif isinstance(subcategories_data, dict):
+                save_subcategory(category, subcategories_data)
+            else:
+                return Response({"error": "Invalid subcategories data format"}, status=status.HTTP_400_BAD_REQUEST)
 
-				# Set the category for the subcategory
-				subcategory_data['category'] = category.pk
+            return Response({"message": "Category with subcategories created successfully"}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-				subcategory_serializer = SubCategorySerializer(data=subcategory_data)
-				if subcategory_serializer.is_valid():
-					subcategory_serializer.save()
-				else:
-					# Rollback: Delete the created category
-					category.delete()
-					return Response(subcategory_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+def save_subcategory(category, subcategory_data):
+    existing_subcategory = SubCategory.objects.filter(title=subcategory_data.get('title')).first()
+    if existing_subcategory:
+        raise ValueError(f"Subcategory '{subcategory_data.get('title')}' already exists")
 
-			return Response({"message": "Category with subcategories created successfully"}, status=status.HTTP_201_CREATED)
-	except Exception as e:
-		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    subcategory_data['category'] = category.pk
+    subcategory_serializer = SubCategorySerializer(data=subcategory_data)
+    if subcategory_serializer.is_valid():
+        subcategory_serializer.save()
+    else:
+        raise ValueError(subcategory_serializer.errors)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
@@ -323,48 +326,48 @@ def all_product_list(request):
 	 
 
 # def product_detail_view(request, pid):
-# 	if request.method == 'GET':
-# 		product = Product.objects.get(pid=pid)
-# 		# product = get_object_or_404(Product, pid=pid)
-# 		products = Product.objects.filter(category=product.category).exclude(pid=pid)
+#   if request.method == 'GET':
+#     product = Product.objects.get(pid=pid)
+#     # product = get_object_or_404(Product, pid=pid)
+#     products = Product.objects.filter(category=product.category).exclude(pid=pid)
 
-# 		# Getting all reviews related to a product
-# 		reviews = ProductReview.objects.filter(product=product).order_by("-date")
+#     # Getting all reviews related to a product
+#     reviews = ProductReview.objects.filter(product=product).order_by("-date")
 
-# 		# Getting average review
-# 		average_rating = ProductReview.objects.filter(product=product).aggregate(rating=Avg('rating'))
+#     # Getting average review
+#     average_rating = ProductReview.objects.filter(product=product).aggregate(rating=Avg('rating'))
 
-# 		# Product Review form
-# 		review_form = ProductReviewForm()
+#     # Product Review form
+#     review_form = ProductReviewForm()
 
 
-# 		make_review = True 
+#     make_review = True 
 
-# 		if request.user.is_authenticated:
-# 			address = Address.objects.get(status=True, user=request.user)
-# 			user_review_count = ProductReview.objects.filter(user=request.user, product=product).count()
+#     if request.user.is_authenticated:
+#       address = Address.objects.get(status=True, user=request.user)
+#       user_review_count = ProductReview.objects.filter(user=request.user, product=product).count()
 
-# 			if user_review_count > 0:
-# 				make_review = False
+#       if user_review_count > 0:
+#         make_review = False
 		
-# 		address = "Login To Continue"
+#     address = "Login To Continue"
 
 
-# 		p_image = product.p_images.all()
+#     p_image = product.p_images.all()
 
-# 		context = {
-# 			"p": product,
-# 			"address": address,
-# 			"make_review": make_review,
-# 			"review_form": review_form,
-# 			"p_image": p_image,
-# 			"average_rating": average_rating,
-# 			"reviews": reviews,
-# 			"products": products,
-# 		}
+#     context = {
+#       "p": product,
+#       "address": address,
+#       "make_review": make_review,
+#       "review_form": review_form,
+#       "p_image": p_image,
+#       "average_rating": average_rating,
+#       "reviews": reviews,
+#       "products": products,
+#     }
 
-# 		return Response(context, status=status.HTTP_200_OK)
-# 	return Response({}, status.HTTP_400_BAD_REQUEST)
+#     return Response(context, status=status.HTTP_200_OK)
+#   return Response({}, status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -438,35 +441,65 @@ def search_view(request):
 	return Response({}, status.HTTP_400_BAD_REQUEST)
 	
 
-
-def filter_product(request):
-	categories = request.GET.getlist("category[]")
-	brands = request.GET.getlist("brand[]")
-
-
-	min_price = request.GET['min_price']
-	max_price = request.GET['max_price']
-
-	products = Product.objects.filter(product_status="published").order_by("-id").distinct()
-
-	products = products.filter(price__gte=min_price)
-	products = products.filter(price__lte=max_price)
+# @api_view(['GET'])
+# @permission_classes([IsAuthenticated]) 
+# def filter_product(request):
+#   categories = request.GET.getlist("category[]")
+#   brands = request.GET.getlist("brand[]")
 
 
-	if len(categories) > 0:
-		products = products.filter(category__id__in=categories).distinct() 
-	else:
-		products = Product.objects.filter(product_status="published").order_by("-id").distinct()
-	if len(brands) > 0:
-		products = products.filter(brand__id__in=brands).distinct() 
-	else:
-		products = Product.objects.filter(product_status="published").order_by("-id").distinct()    
+#   min_price = request.GET['min_price']
+#   max_price = request.GET['max_price']
+
+#   products = Product.objects.filter(product_status="published").order_by("-id").distinct()
+
+#   products = products.filter(price__gte=min_price)
+#   products = products.filter(price__lte=max_price)
+
+
+#   if len(categories) > 0:
+#     products = products.filter(category__id__in=categories).distinct() 
+#   else:
+#     products = Product.objects.filter(product_status="published").order_by("-id").distinct()
+#   if len(brands) > 0:
+#     products = products.filter(brand__id__in=brands).distinct() 
+#   else:
+#     products = Product.objects.filter(product_status="published").order_by("-id").distinct()    
 	
 		 
 
 	
-	data = render_to_string("core/async/product-list.html", {"products": products})
-	return JsonResponse({"data": data})
+#   data = render_to_string("core/async/product-list.html", {"products": products})
+#   return JsonResponse({"data": data})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def filter_product(request, min_price, max_price, subCats, *args, **kwargs):
+		try:
+				# categories = request.GET.getlist("category[]")
+				categories = subCats
+				brands = request.GET.getlist("brand[]")
+
+				products = Product.objects.filter(product_status="published").order_by("-id").distinct()
+				products = products.filter(price__gte=min_price)
+				products = products.filter(price__lte=max_price)
+
+				if len(categories) > 0:
+						products = products.filter(category__id__in=categories).distinct()
+				if len(brands) > 0:
+						products = products.filter(brand__id__in=brands).distinct()
+
+				serializer = ProductSerializer(products, many=True)
+				data = serializer.data
+
+				# Optionally, you can render the data to HTML if needed
+				# data_html = render_to_string("core/async/product-list.html", {"products": serializer.data})
+
+				return Response({"data": data})
+		except Exception as e:
+				return Response({"error": str(e)}, status=500)
+
+
 
 
 @api_view(['GET'])
@@ -1035,7 +1068,7 @@ def Activities(request):
 			# data = request.data
 			# customer_id = data['id']
 			# if not customer_id:
-			# 	return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
+			#   return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
 			# customeractivity = UserActivity.objects.filter(pk=customer_id).order_by("-id")
 			# # Update the status for each order
 			# serializer = UserActivitySerializer(customeractivity, many=True)
@@ -1162,7 +1195,6 @@ def customer_dashboard(request):
 	orders_list = CartOrder.objects.filter(user=request.user,product_status=data['status']).order_by("-id")
 	address = Address.objects.filter(user=request.user)
 
-
 	orders = CartOrder.objects.annotate(month=ExtractMonth("order_date")).values("month").annotate(count=Count("id")).values("month", "count")
 	month = []
 	total_orders = []
@@ -1250,27 +1282,27 @@ def wishlist_view(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def add_to_wishlist(request):
-    if request.method == 'GET':
-        try:
-            product_id = request.GET.get('id')  # Use get to avoid MultiValueDictKeyError
-            if not product_id:
-                return Response({"error": "'id' parameter is missing"}, status=status.HTTP_400_BAD_REQUEST)
+		if request.method == 'GET':
+				try:
+						product_id = request.GET.get('id')  # Use get to avoid MultiValueDictKeyError
+						if not product_id:
+								return Response({"error": "'id' parameter is missing"}, status=status.HTTP_400_BAD_REQUEST)
 
-            product = Product.objects.get(id=product_id)
+						product = Product.objects.get(id=product_id)
 
-            wishlist_item = wishlist_model.objects.filter(product=product, user=request.user).first()
+						wishlist_item = wishlist_model.objects.filter(product=product, user=request.user).first()
 
-            if wishlist_item:
-                return Response({"message": "Item already in wishlist"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                new_wishlist = wishlist_model.objects.create(
-                    user=request.user,
-                    product=product,
-                )
-                return Response({"message": "Item added to wishlist"}, status=status.HTTP_200_OK)
-        except Product.DoesNotExist:
-            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
-    return Response({}, status.HTTP_400_BAD_REQUEST)
+						if wishlist_item:
+								return Response({"message": "Item already in wishlist"}, status=status.HTTP_400_BAD_REQUEST)
+						else:
+								new_wishlist = wishlist_model.objects.create(
+										user=request.user,
+										product=product,
+								)
+								return Response({"message": "Item added to wishlist"}, status=status.HTTP_200_OK)
+				except Product.DoesNotExist:
+						return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+		return Response({}, status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -1352,85 +1384,85 @@ def terms_of_service(request):
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def send_reset_password_otp(request):
-    try:
-        if request.method == 'POST':
-            email = request.data.get('email')
-    
-            # Check if the email exists in the database
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
-    
-            # Generate OTP
-            otp = generate_otp()
-    
-            # Save the OTP in the user's profile or a separate table
-            user.profile.otp = otp
-            user.profile.save()
-    
-            # Send OTP to the user's email
-            subject = _('Reset Password OTP')
-            message = _('Your OTP for resetting the password is: ') + otp
-            from_email = 'your@example.com'  # Replace with your email
-            recipient_list = [email]
-            send_mail(subject, message, from_email, recipient_list)
-    
-            return Response({"message": "OTP sent to your email"}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		try:
+				if request.method == 'POST':
+						email = request.data.get('email')
+		
+						# Check if the email exists in the database
+						try:
+								user = User.objects.get(email=email)
+						except User.DoesNotExist:
+								return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+		
+						# Generate OTP
+						otp = generate_otp()
+		
+						# Save the OTP in the user's profile or a separate table
+						user.profile.otp = otp
+						user.profile.save()
+		
+						# Send OTP to the user's email
+						subject = _('Reset Password OTP')
+						message = _('Your OTP for resetting the password is: ') + otp
+						from_email = 'your@example.com'  # Replace with your email
+						recipient_list = [email]
+						send_mail(subject, message, from_email, recipient_list)
+		
+						return Response({"message": "OTP sent to your email"}, status=status.HTTP_200_OK)
+		except Exception as e:
+				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def verify_reset_password_otp(request):
-    try:
-        if request.method == 'POST':
-            email = request.data.get('email')
-            otp = request.data.get('otp')
-    
-            # Check if the email exists in the database
-            try:
-                user = User.objects.get(email=email)
-            except User.DoesNotExist:
-                return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
-    
-            # Check if the OTP matches
-            if user.profile.otp != otp:
-                return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
-    
-            # Generate a password reset token
-            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-    
-            return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		try:
+				if request.method == 'POST':
+						email = request.data.get('email')
+						otp = request.data.get('otp')
+		
+						# Check if the email exists in the database
+						try:
+								user = User.objects.get(email=email)
+						except User.DoesNotExist:
+								return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+		
+						# Check if the OTP matches
+						if user.profile.otp != otp:
+								return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+		
+						# Generate a password reset token
+						uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+						token = default_token_generator.make_token(user)
+		
+						return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
+		except Exception as e:
+				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def reset_password(request):
-    try:
-        if request.method == 'POST':
-            uidb64 = request.data.get('uidb64')
-            token = request.data.get('token')
-            password = request.data.get('password')
-    
-            # Decode the uidb64 to get the user ID
-            try:
-                uid = force_str(urlsafe_base64_decode(uidb64))
-                user = User.objects.get(pk=uid)
-            except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-                user = None
-    
-            # Check if the user exists and the token is valid
-            if user is not None and default_token_generator.check_token(user, token):
-                # Set the new password
-                user.set_password(password)
-                user.save()
-                return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"error": "Invalid token or user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		try:
+				if request.method == 'POST':
+						uidb64 = request.data.get('uidb64')
+						token = request.data.get('token')
+						password = request.data.get('password')
+		
+						# Decode the uidb64 to get the user ID
+						try:
+								uid = force_str(urlsafe_base64_decode(uidb64))
+								user = User.objects.get(pk=uid)
+						except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+								user = None
+		
+						# Check if the user exists and the token is valid
+						if user is not None and default_token_generator.check_token(user, token):
+								# Set the new password
+								user.set_password(password)
+								user.save()
+								return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
+						else:
+								return Response({"error": "Invalid token or user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+		except Exception as e:
+				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

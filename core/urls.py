@@ -20,7 +20,7 @@ urlpatterns = [
     path("Staff_list/",Staff_list, name="Staff_list"),
     path("category/", category_list_view, name="category-list"),
     path("category/<cid>/", category_product_list__view, name="category-product-list"),
-    path('subcategories/', subcategory_list_view, name='subcategory_list_view'),
+    path('subcategories/<cid>/', subcategory_list_view, name='subcategory_list_view'),
     path('create_category_and_subcategories/', create_category_and_subcategories, name='create_category_and_subcategories'),
     # Brand
     path("brands/", brands_list_view, name="brand-list"),
@@ -45,7 +45,8 @@ urlpatterns = [
     path("search/", search_view, name="search"),
 
     # Filter product URL
-    path("filter-products/", filter_product, name="filter-product"),
+    # path("filter-products/", filter_product, name="filter-product"),
+    path('filter_products/<int:min_price>/<int:max_price>/<int:subCats>/', filter_product, name='filter_product'),
 
     # Add to cart URL
     path("add-to-cart/", add_to_cart, name="add-to-cart"),
