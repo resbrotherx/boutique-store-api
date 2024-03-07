@@ -12,7 +12,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      
+      - name: Change to project directory
+        run: cd boutique-store-api
+
       # - name: Install dependencies
       #   run: |
       #     sudo apt-get update
@@ -21,7 +23,6 @@ jobs:
       
       - name: Run database migrations
         run: |
-          cd /var/www/boutique-store-api
           source venv/bin/activate
           python manage.py makemigrations
           python manage.py migrate
