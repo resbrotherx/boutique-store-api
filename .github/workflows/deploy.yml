@@ -21,6 +21,7 @@ jobs:
       
       - name: Run database migrations
         run: |
+          cd /var/www/boutique-store-api
           source venv/bin/activate
           python manage.py makemigrations
           python manage.py migrate
