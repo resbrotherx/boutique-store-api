@@ -21,12 +21,12 @@ jobs:
       #     sudo apt-get install python3 python3-pip
       #     pip3 install -r requirements.txt
       
-      - name: Run database migrations
-        run: |
-          ls
-          source venv/scripts/activate
-          python manage.py makemigrations
-          python manage.py migrate
+      # - name: Run database migrations
+      #   run: |
+      #     ls
+      #     source venv/scripts/activate
+      #     python manage.py makemigrations
+      #     python manage.py migrate
 
       - name: Collect static files
         run: python manage.py collectstatic --noinput
