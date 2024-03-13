@@ -434,6 +434,21 @@ CKEDITOR_5_CONFIGS = {
     },
 }
 
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.hostinger.com'
+# EMAIL_PORT = 465
+# EMAIL_HOST_USER = 'support@lifemapcapital.com'
+# EMAIL_HOST_PASSWORD = 'Francis1@male'
+# EMAIL_USE_TLS = False
+# EMAIL_USE_SSL = True
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mail.privateemail.com'
+EMAIL_PORT = 465
+EMAIL_HOST_USER = 'info@tribelikeworld.com'
+EMAIL_HOST_PASSWORD = '78ikenna'
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
 
 
 PAYPAL_RECEIVER_EMAIL = 'director@aliceandtiwa.com'

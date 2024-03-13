@@ -42,7 +42,7 @@ from userauths.models import User
 
 
 def generate_otp():
-		return str(random.randint(100000, 999999))
+	return str(random.randint(100000, 999999))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
@@ -1385,84 +1385,83 @@ def terms_of_service(request):
 @csrf_exempt
 def send_reset_password_otp(request):
 		try:
-				if request.method == 'POST':
-						email = request.data.get('email')
+			if request.method == 'POST':
+				email = request.data.get('email')
 		
-						# Check if the email exists in the database
-						try:
-								user = User.objects.get(email=email)
-						except User.DoesNotExist:
-								return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+				# Check if the email exists in the database
+				try:
+					user = User.objects.get(email=email)
+				except User.DoesNotExist:
+					return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
 		
-						# Generate OTP
-						otp = generate_otp()
+				# Generate OTP
+				otp = generate_otp()
 		
-						# Save the OTP in the user's profile or a separate table
-						user.profile.otp = otp
-						user.profile.save()
+				# Save the OTP in the user's profile or a separate table
+				user.profile.otp = otp
+				user.profile.save()
 		
-						# Send OTP to the user's email
-						subject = _('Reset Password OTP')
-						message = _('Your OTP for resetting the password is: ') + otp
-						from_email = 'your@example.com'  # Replace with your email
-						recipient_list = [email]
-						send_mail(subject, message, from_email, recipient_list)
-		
-						return Response({"message": "OTP sent to your email"}, status=status.HTTP_200_OK)
+				# Send OTP to the user's email
+				subject = _('Reset Password OTP')
+				message = _('Your OTP for resetting the password is: ') + otp
+				from_email = settings.EMAIL_HOST_USER
+				recipient_list = [email]
+				send_mail(subject, message, from_email, recipient_list, fail_silently=False)
+				return Response({"message": "OTP sent to your email"}, status=status.HTTP_200_OK)
 		except Exception as e:
-				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def verify_reset_password_otp(request):
 		try:
-				if request.method == 'POST':
-						email = request.data.get('email')
-						otp = request.data.get('otp')
+			if request.method == 'POST':
+				email = request.data.get('email')
+				otp = request.data.get('otp')
 		
-						# Check if the email exists in the database
-						try:
-								user = User.objects.get(email=email)
-						except User.DoesNotExist:
-								return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
+				# Check if the email exists in the database
+				try:
+					user = User.objects.get(email=email)
+				except User.DoesNotExist:
+					return Response({"error": "User with this email does not exist"}, status=status.HTTP_404_NOT_FOUND)
 		
 						# Check if the OTP matches
-						if user.profile.otp != otp:
-								return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+				if user.profile.otp != otp:
+					return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
 		
 						# Generate a password reset token
-						uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-						token = default_token_generator.make_token(user)
-		
-						return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
+				uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+				token = default_token_generator.make_token(user)
+
+				return Response({"uidb64": uidb64, "token": token}, status=status.HTTP_200_OK)
 		except Exception as e:
-				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def reset_password(request):
 		try:
-				if request.method == 'POST':
-						uidb64 = request.data.get('uidb64')
-						token = request.data.get('token')
-						password = request.data.get('password')
+			if request.method == 'POST':
+				uidb64 = request.data.get('uidb64')
+				token = request.data.get('token')
+				password = request.data.get('password')
 		
 						# Decode the uidb64 to get the user ID
-						try:
-								uid = force_str(urlsafe_base64_decode(uidb64))
-								user = User.objects.get(pk=uid)
-						except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-								user = None
+				try:
+					uid = force_str(urlsafe_base64_decode(uidb64))
+					user = User.objects.get(pk=uid)
+				except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+					user = None
 		
 						# Check if the user exists and the token is valid
-						if user is not None and default_token_generator.check_token(user, token):
+				if user is not None and default_token_generator.check_token(user, token):
 								# Set the new password
-								user.set_password(password)
-								user.save()
-								return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
-						else:
-								return Response({"error": "Invalid token or user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+					user.set_password(password)
+					user.save()
+					return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
+				else:
+					return Response({"error": "Invalid token or user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 		except Exception as e:
-				return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

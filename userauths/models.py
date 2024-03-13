@@ -45,6 +45,7 @@ class Profile(models.Model):
     display_name = models.CharField(max_length=1000, default='none')
     full_name = models.CharField(max_length=1000)
     bio = models.CharField(max_length=100)
+    otp = models.CharField(max_length=100)
     role = models.CharField(
         choices=ROLE, max_length=30, default="customer")
     color = models.CharField(
