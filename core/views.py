@@ -1381,7 +1381,7 @@ def terms_of_service(request):
 	return render(request, "core/terms_of_service.html")
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 @csrf_exempt
 def send_reset_password_otp(request):
 		try:
@@ -1412,7 +1412,7 @@ def send_reset_password_otp(request):
 			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 @csrf_exempt
 def verify_reset_password_otp(request):
 		try:
@@ -1439,7 +1439,7 @@ def verify_reset_password_otp(request):
 			return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 @csrf_exempt
 def reset_password(request):
 		try:
