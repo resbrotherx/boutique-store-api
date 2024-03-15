@@ -46,7 +46,7 @@ urlpatterns = [
 
     # Filter product URL
     # path("filter-products/", filter_product, name="filter-product"),
-    path('filter_products/<int:min_price>/<int:max_price>/<int:subCats>/', filter_product, name='filter_product'),
+    path('filter_products/<min_price>/<max_price>/<subCats>/', filter_product, name='filter_product'),
 
     # Add to cart URL
     path("add-to-cart/", add_to_cart, name="add-to-cart"),

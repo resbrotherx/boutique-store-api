@@ -13,20 +13,20 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email')
 
-# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-#     @classmethod
-#     def get_token(cls, user):
-#         token = super().get_token(user)
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
         
-#         # These are claims, you can add custom claims
-#         token['full_name'] = user.profile.full_name
-#         token['username'] = user.username
-#         token['email'] = user.email
-#         token['bio'] = user.profile.bio
-#         token['image'] = str(user.profile.image)
-#         token['verified'] = user.profile.verified
-#         # ...
-#         return token
+        # These are claims, you can add custom claims
+        token['full_name'] = user.profile.full_name
+        token['username'] = user.username
+        token['email'] = user.email
+        token['bio'] = user.profile.bio
+        token['image'] = str(user.profile.image)
+        token['verified'] = user.profile.verified
+        # ...
+        return token
 
 # class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 #     email = serializers.EmailField(source='user.email')
@@ -37,31 +37,31 @@ class UserSerializer(serializers.ModelSerializer):
 #         data['email'] = self.user.email
 #         return data
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    email = serializers.EmailField()
+# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+#     email = serializers.EmailField()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Restrict the fields to accept only email and password during initialization
-        self.fields['email'] = serializers.EmailField()
-        self.fields['password'] = serializers.CharField()
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         # Restrict the fields to accept only email and password during initialization
+#         self.fields['email'] = serializers.EmailField()
+#         self.fields['password'] = serializers.CharField()
 
-    def validate(self, attrs):
-        # Only accept email and password for authentication
-        email = attrs.get('email')
-        password = attrs.get('password')
+#     def validate(self, attrs):
+#         # Only accept email and password for authentication
+#         email = attrs.get('email')
+#         password = attrs.get('password')
 
-        if email and password:
-            user = authenticate(email=email, password=password)
+#         if email and password:
+#             user = authenticate(email=email, password=password)
 
-            if user:
-                # If user authentication is successful, generate token
-                data = super().validate(attrs)
-                return data
-            else:
-                raise serializers.ValidationError('Unable to log in with provided credentials.')
-        else:
-            raise serializers.ValidationError('Must include "email" and "password" fields.')
+#             if user:
+#                 # If user authentication is successful, generate token
+#                 data = super().validate(attrs)
+#                 return data
+#             else:
+#                 raise serializers.ValidationError('Unable to log in with provided credentials.')
+#         else:
+#             raise serializers.ValidationError('Must include "email" and "password" fields.')
 
 
 class RegisterSerializer(serializers.ModelSerializer):

@@ -495,7 +495,7 @@ def filter_product(request, min_price, max_price, subCats, *args, **kwargs):
 				# Optionally, you can render the data to HTML if needed
 				# data_html = render_to_string("core/async/product-list.html", {"products": serializer.data})
 
-				return Response({"data": data})
+				return Response({"products": data})
 		except Exception as e:
 				return Response({"error": str(e)}, status=500)
 
