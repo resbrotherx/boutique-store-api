@@ -51,6 +51,11 @@ class WishlistSerializer(serializers.ModelSerializer):
         model = wishlist_model
         # fields = '__all__'
         fields = ['id', 'date', 'product','user']
+        
+class VoucherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Voucher
+        fields = '__all__'
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

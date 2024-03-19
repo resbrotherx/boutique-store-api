@@ -254,7 +254,7 @@ class Product(models.Model):
 	mfd = models.DateTimeField(auto_now_add=False, null=True, blank=True)
 
 	tags = TaggableManager(blank=True)
-
+	voucher = models.ManyToManyField("Voucher", blank=True)
 	# colors = models.ManyToManyField(max_length=255, choices=COLORS, blank=True)
 	# sizes = models.ManyToManyField(max_length=255, choices=SIZES, blank=True)
 
@@ -337,6 +337,7 @@ class CartOrder(models.Model):
 	name = models.CharField(max_length=200,default="none")
 	order_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 	assign_to = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,related_name="assigned")
+	voucher = models.ManyToManyField("Voucher", blank=True)
 	importance = models.CharField(
 		choices=STATUS_IMPORTANCE, max_length=50, default="normal")
 	product_status = models.CharField(
@@ -419,8 +420,8 @@ class Voucher(models.Model):
 	issued_time = models.TimeField(auto_now_add=True)
 	start_date = models.DateField(auto_now=True)
 	start_time = models.TimeField(auto_now=True)
-	end_date = models.DateField(auto_now=True)
-	end_time = models.TimeField(auto_now=True)
+	end_date = models.DateField(auto_now_add=True)
+	end_time = models.TimeField(auto_now_add=True)
 	price = models.DecimalField(
 		max_digits=99999999999999, decimal_places=2, default="0.00")
 	status = models.CharField(

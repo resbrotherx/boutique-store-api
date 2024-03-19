@@ -33,7 +33,9 @@ urlpatterns = [
     path("reset_password/", reset_password, name="reset_password"),
     
     # Exchange
-    path("Exchange/", Exchange, name="Exchange"),
+    # path("Exchange/", Exchange, name="Exchange"),
+    path("create_exchange_voucher/", CreateExchangevoucher, name="Exchange"),
+    path("create_sales_voucher/", CreateSalesvoucher, name="SalesExchange"),
     
     # Tags
     path("products/tag/<slug:tag_slug>/", tag_list, name="tags"),

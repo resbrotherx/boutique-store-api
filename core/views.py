@@ -39,6 +39,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.translation import gettext_lazy as _
 # from django.contrib.auth.models import User
 from userauths.models import User
+from django.db.models import Q
+from django.utils.datastructures import MultiValueDictKeyError
+
 
 
 def generate_otp():
@@ -264,48 +267,48 @@ def brand_detail_view(request, vid):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_category_and_subcategories(request):
-    try:
-        if request.method == 'POST':
-            data = request.data
-            category_data = data.get('category')
-            subcategories_data = data.get('subcategories')
+	try:
+		if request.method == 'POST':
+			data = request.data
+			category_data = data.get('category')
+			subcategories_data = data.get('subcategories')
 
-            # Check if the category already exists
-            existing_category = Category.objects.filter(title=category_data.get('title')).first()
-            if existing_category:
-                return Response({"error": "Category already exists"}, status=status.HTTP_400_BAD_REQUEST)
+			# Check if the category already exists
+			existing_category = Category.objects.filter(title=category_data.get('title')).first()
+			if existing_category:
+				return Response({"error": "Category already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create the category
-            category_serializer = CategorySerializer(data=category_data)
-            if category_serializer.is_valid():
-                category = category_serializer.save()
-            else:
-                return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+			# Create the category
+			category_serializer = CategorySerializer(data=category_data)
+			if category_serializer.is_valid():
+				category = category_serializer.save()
+			else:
+				return Response(category_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # Save subcategories
-            if isinstance(subcategories_data, list):
-                for subcategory_data in subcategories_data:
-                    save_subcategory(category, subcategory_data)
-            elif isinstance(subcategories_data, dict):
-                save_subcategory(category, subcategories_data)
-            else:
-                return Response({"error": "Invalid subcategories data format"}, status=status.HTTP_400_BAD_REQUEST)
+			# Save subcategories
+			if isinstance(subcategories_data, list):
+				for subcategory_data in subcategories_data:
+					save_subcategory(category, subcategory_data)
+			elif isinstance(subcategories_data, dict):
+				save_subcategory(category, subcategories_data)
+			else:
+				return Response({"error": "Invalid subcategories data format"}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({"message": "Category with subcategories created successfully"}, status=status.HTTP_201_CREATED)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			return Response({"message": "Category with subcategories created successfully"}, status=status.HTTP_201_CREATED)
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def save_subcategory(category, subcategory_data):
-    existing_subcategory = SubCategory.objects.filter(title=subcategory_data.get('title')).first()
-    if existing_subcategory:
-        raise ValueError(f"Subcategory '{subcategory_data.get('title')}' already exists")
+	existing_subcategory = SubCategory.objects.filter(title=subcategory_data.get('title')).first()
+	if existing_subcategory:
+		raise ValueError(f"Subcategory '{subcategory_data.get('title')}' already exists")
 
-    subcategory_data['category'] = category.pk
-    subcategory_serializer = SubCategorySerializer(data=subcategory_data)
-    if subcategory_serializer.is_valid():
-        subcategory_serializer.save()
-    else:
-        raise ValueError(subcategory_serializer.errors)
+	subcategory_data['category'] = category.pk
+	subcategory_serializer = SubCategorySerializer(data=subcategory_data)
+	if subcategory_serializer.is_valid():
+		subcategory_serializer.save()
+	else:
+		raise ValueError(subcategory_serializer.errors)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
@@ -423,23 +426,31 @@ def ajax_add_review(request, pid):
 		 }
 	)
 
-@api_view(['GET','POST'])
+@api_view(['GET', 'POST'])
 def search_view(request):
 	if request.method == 'GET':
-		query = request.GET.get("q")
-		products = Product.objects.filter(title__icontains=query).order_by("-date")
-
-		context = {
-			"products": products,
-			"query": query,
-		}
-		return Response(context, status=status.HTTP_200_OK)
+		try:
+			query = request.data
+			if query:
+				prod = Product.objects.filter(Q(title__icontains=query['q'])).order_by("-date")
+				products = ProductSerializer(prod, many=True)
+				context = {
+					"products": products.data,
+					"query": query,
+				}
+				return Response(context, status=status.HTTP_200_OK)
+			else:
+				ms = query['q']
+				data = f'sorry there is no item with the name: {ms}'
+				return Response({'response': data}, status=status.HTTP_200_OK)
+		except MultiValueDictKeyError:
+			return Response({'error': 'Query parameter "q" is missing'}, status=status.HTTP_400_BAD_REQUEST)
 	elif request.method == 'POST':
 		text = "Hello buddy"
 		data = f'Congratulation your API just responded to POST request with text: {text}'
 		return Response({'response': data}, status=status.HTTP_200_OK)
 	return Response({}, status.HTTP_400_BAD_REQUEST)
-	
+
 
 # @api_view(['GET'])
 # @permission_classes([IsAuthenticated]) 
@@ -1155,27 +1166,27 @@ def Exchange(request):
 			address = data.get('address')
 			user_ = data.get('username')
 			total_price = data.get('total_price')
-			user = User.objects.get(username=user_)
 
+			user = User.objects.get(username=user_)
 			if not order_ids or not address or not user or not total_price:
 				return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
 
 			with transaction.atomic():
 				# Create a single voucher for all orders
-				voucher_code = f"AT{secrets.token_hex(4).upper()}"
-				discount_price = 50
+				voucher_code = f"AT{secrets.token_hex(4).upper()}EX"
 				voucher_create = Voucher.objects.create(
 					user=user,
 					code=voucher_code,
-					price=float(total_price) - discount_price
+					price=float(total_price)
 				)
 
-				# Update the status for each order
+				# Update the status for each order and assign the voucher
 				orders = CartOrder.objects.filter(pk__in=order_ids).order_by("-id")
+				
 				for order in orders:
 					order.product_status = "processing_exchange"
 					order.pickup_address = address
-					order.voucher = voucher_create
+					order.voucher.add(voucher_create)  # Assign the voucher to the order
 					order.save()
 
 			serializer = OrderSerializer(orders, many=True)
@@ -1187,6 +1198,106 @@ def Exchange(request):
 		return Response({"error": "One or more CartOrders not found"}, status=status.HTTP_404_NOT_FOUND)
 	except Exception as e:
 		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def CreateExchangevoucher(request):
+	try:
+		if request.method == 'POST':
+			data = request.data
+			product_ids = data.get('ids', [])
+			statuse = data.get('status')  # Renamed from status
+			user_ = data.get('username')
+			end_date = data.get('end_date')
+			end_time = data.get('end_time')
+			total_price = data.get('total_price')
+			user = User.objects.get(username=user_)
+
+			if not product_ids or not statuse or not user or not total_price:
+				return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
+
+			voucher_objects = []  # List to store created voucher objects
+
+			with transaction.atomic():
+				# Create a voucher for each product
+				for product_id in product_ids:
+					voucher_code = f"AT{secrets.token_hex(4).upper()}EX"
+					voucher_create = Voucher.objects.create(
+						user=user,
+						code=voucher_code,
+						status=statuse,
+						end_date=end_date,
+						end_time=end_time,
+						price=float(total_price)
+					)
+					voucher_objects.append(voucher_create)  # Add voucher to list
+
+					# Update the product to associate it with the voucher
+					product = Product.objects.get(pk=product_id)
+					product.voucher.add(voucher_create)  # Add voucher to product's voucher set
+
+			serializer = VoucherSerializer(voucher_objects, many=True)
+			context = {"vouchers": serializer.data}
+			return Response(context, status=status.HTTP_200_OK)
+	except User.DoesNotExist:
+		return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+	except Product.DoesNotExist:
+		return Response({"error": "One or more Products not found"}, status=status.HTTP_404_NOT_FOUND)
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def CreateSalesvoucher(request):
+	try:
+		if request.method == 'POST':
+			data = request.data
+			product_ids = data.get('ids', [])
+			statuse = data.get('status')  # Renamed from status
+			user_ = data.get('username')
+			end_date = data.get('end_date')
+			end_time = data.get('end_time')
+			start_date = data.get('start_date')
+			start_time = data.get('start_time')
+			total_price = data.get('total_price')
+			user = User.objects.get(username=user_)
+
+			if not product_ids or not statuse or not user or not total_price:
+				return Response({"error": "Invalid request data"}, status=status.HTTP_400_BAD_REQUEST)
+
+			voucher_objects = []  # List to store created voucher objects
+
+			with transaction.atomic():
+				# Create a voucher for each product
+				for product_id in product_ids:
+					voucher_code = f"AT{secrets.token_hex(4).upper()}SL"
+					voucher_create = Voucher.objects.create(
+						user=user,
+						code=voucher_code,
+						status=statuse,
+						start_date=start_date,
+						start_time=start_time,
+						end_date=end_date,
+						end_time=end_time,
+						price=float(total_price)
+					)
+					voucher_objects.append(voucher_create)  # Add voucher to list
+
+					# Update the product to associate it with the voucher
+					product = Product.objects.get(pk=product_id)
+					product.voucher.add(voucher_create)  # Add voucher to product's voucher set
+
+			serializer = VoucherSerializer(voucher_objects, many=True)
+			context = {"vouchers": serializer.data}
+			return Response(context, status=status.HTTP_200_OK)
+	except User.DoesNotExist:
+		return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+	except Product.DoesNotExist:
+		return Response({"error": "One or more Products not found"}, status=status.HTTP_404_NOT_FOUND)
+	except Exception as e:
+		return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 @api_view(['GET', 'POST'])
